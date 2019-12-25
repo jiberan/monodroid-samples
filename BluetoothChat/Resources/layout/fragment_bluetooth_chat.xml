@@ -14,36 +14,55 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              android:layout_width="match_parent"
-              android:layout_height="match_parent"
-              android:orientation="vertical" >
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal">
 
-    <ListView
-        android:id="@+id/in"
-        android:layout_width="match_parent"
+    <LinearLayout
+        android:layout_width="wrap_content"
         android:layout_height="match_parent"
-        android:layout_weight="1"
-        android:stackFromBottom="true"
-        android:transcriptMode="alwaysScroll" />
+        android:orientation="vertical">
+        <TextView
+            android:text="Stav ridic 1:"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/driverCard1View" />
+        <EditText
+            android:inputType="numberSigned"
+            android:text="007"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/driverCard1Id" />
+        <Spinner
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/driverCard1"
+            android:prompt="@string/driver_card_state"/>
+
+    </LinearLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal" >
-
+        android:orientation="vertical">
+        <TextView
+            android:text="Stav ridic 2:"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:id="@+id/driverCard2View" />
         <EditText
-            android:id="@+id/edit_text_out"
-            android:layout_width="wrap_content"
+            android:inputType="numberSigned"
+            android:text="007"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="bottom"
-            android:layout_weight="1" />
-
-        <Button
-            android:id="@+id/button_send"
+            android:id="@+id/driverCard2Id" />
+        <Spinner
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/send" />
+            android:layout_height="match_parent"
+            android:id="@+id/driverCard2"
+            android:prompt="@string/driver_card_state"/>
     </LinearLayout>
 
 </LinearLayout>

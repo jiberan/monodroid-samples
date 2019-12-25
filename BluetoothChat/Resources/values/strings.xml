@@ -16,12 +16,12 @@
 
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
 
-    <string name="ok">Ok</string>
-    
-    <!--  BluetoothChat -->
-    <string name="app_name">BluetoothChat</string>
-    <string name="intro_message">
-        <![CDATA[
+  <string name="ok">Ok</string>
+
+  <!--  BluetoothChat -->
+  <string name="app_name">GX Tester</string>
+  <string name="intro_message">
+    <![CDATA[
         
             
             This application allows two Android devices to carry out two-way text chat over
@@ -34,30 +34,41 @@
             
         
         ]]>
-    </string>
-    <string name="send">Send</string>
-    <string name="not_connected">You are not connected to a device</string>
-    <string name="bt_not_available_leaving">Bluetooth is not available on this device. Leaving Bluetooth Chat.</string>
-    <string name="bt_not_enabled_leaving">Bluetooth was not enabled. Leaving Bluetooth Chat.</string>
-    <string name="title_connecting">Connecting...</string>
-    <string name="title_connected_to">Connected to <xliff:g id="device_name">%1$s</xliff:g></string>
-    <string name="title_not_connected">Not Connected</string>
+  </string>
+  <string name="send">Send</string>
+  <string name="not_connected">You are not connected to a device</string>
+  <string name="bt_not_available_leaving">Bluetooth is not available on this device. Leaving Bluetooth Chat.</string>
+  <string name="bt_not_enabled_leaving">Bluetooth was not enabled. Leaving Bluetooth Chat.</string>
+  <string name="title_connecting">Connecting...</string>
+  <string name="title_connected_to">
+    Connected to <xliff:g id="device_name">%1$s</xliff:g>
+  </string>
+  <string name="title_not_connected">Not Connected</string>
 
-    <!--  DeviceListActivity -->
-    <string name="scanning">Scanning for devices...</string>
-    <string name="select_device">Select a device to connect</string>
-    <string name="none_paired">No devices have been paired</string>
-    <string name="none_found">No devices found</string>
-    <string name="title_paired_devices">Paired Devices</string>
-    <string name="title_other_devices">Other Available Devices</string>
-    <string name="button_scan">Scan for devices</string>
+  <!--  DeviceListActivity -->
+  <string name="scanning">Scanning for devices...</string>
+  <string name="select_device">Select a device to connect</string>
+  <string name="none_paired">No devices have been paired</string>
+  <string name="none_found">No devices found</string>
+  <string name="title_paired_devices">Paired Devices</string>
+  <string name="title_other_devices">Other Available Devices</string>
+  <string name="button_scan">Scan for devices</string>
 
-    <!-- Options Menu -->
-    <string name="secure_connect">Connect a device - Secure</string>
-    <string name="insecure_connect">Connect a device - Insecure</string>
-    <string name="discoverable">Make discoverable</string>
-    <string name="is_discoverable">Currently discoverable</string>
+  <!-- Options Menu -->
+  <string name="secure_connect">Connect a device - Secure</string>
+  <string name="discoverable">Make discoverable</string>
+  <string name="is_discoverable">Currently discoverable</string>
 
-    <!-- Permissions --> 
-    <string name="request_location_permissions">Android relies on the location services to retrieve the identity of Bluetooth devices.</string>
+  <!-- Spinner -->
+  <string name="driver_card_state">Vyber stav karty</string>
+  <string-array name="driver_card_states_array">
+    <item>nevlozena</item>
+    <item>jizda</item>
+    <item>prace</item>
+    <item>prestavka</item>
+    <item>k dispozici</item>    
+  </string-array>
+
+  <!-- Permissions -->
+  <string name="request_location_permissions">Android relies on the location services to retrieve the identity of Bluetooth devices.</string>
 </resources>

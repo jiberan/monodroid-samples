@@ -69,13 +69,13 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
             }
             else if (chatService == null)
             {
-                SetupChat();
+                chatService = new BluetoothChatService(handler);                
             }
 
             // Register for when the scan mode changes
             var filter = new IntentFilter(BluetoothAdapter.ActionScanModeChanged);
             Activity.RegisterReceiver(receiver, filter);
-        }
+        } 
 
         public override void OnResume()
         {
@@ -96,9 +96,32 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
 
         public override void OnViewCreated(View view, Bundle savedInstanceState)
         {
-            conversationView = view.FindViewById<ListView>(Resource.Id.@in);
-            outEditText = view.FindViewById<EditText>(Resource.Id.edit_text_out);
-            sendButton = view.FindViewById<Button>(Resource.Id.button_send);
+            FillSpinner(view);
+        }
+
+        private void FillSpinner(View view)
+        {
+
+            Spinner spinner = view.FindViewById<Spinner>(Resource.Id.driverCard1);
+
+            spinner.ItemSelected += new EventHandler<AdapterView.ItemSelectedEventArgs>(spinner1_ItemSelected);
+            var adapter = ArrayAdapter.CreateFromResource(
+                    view.Context, Resource.Array.driver_card_states_array, Android.Resource.Layout.SimpleSpinnerItem);
+
+            adapter.SetDropDownViewResource(Android.Resource.Layout.SimpleSpinnerDropDownItem);
+            spinner.Adapter = adapter;
+
+
+
+            Spinner spinner2 = view.FindViewById<Spinner>(Resource.Id.driverCard2);
+
+            spinner2.ItemSelected += new EventHandler<AdapterView.ItemSelectedEventArgs>(spinner2_ItemSelected);
+            var adapter2 = ArrayAdapter.CreateFromResource(
+                    view.Context, Resource.Array.driver_card_states_array, Android.Resource.Layout.SimpleSpinnerItem);
+
+            adapter2.SetDropDownViewResource(Android.Resource.Layout.SimpleSpinnerDropDownItem);
+            spinner2.Adapter = adapter2;
+
         }
 
         public override void OnRequestPermissionsResult(int requestCode, string[] permissions, Android.Content.PM.Permission[] grantResults)
@@ -130,12 +153,6 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
                         ConnectDevice(data, true);
                     }
                     break;
-                case REQUEST_CONNECT_DEVICE_INSECURE:
-                    if (Result.Ok == resultCode)
-                    {
-                        ConnectDevice(data, true);
-                    }
-                    break;
                 case REQUEST_ENABLE_BT:
                     if (Result.Ok == resultCode)
                     {
@@ -152,9 +169,6 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
             {
                 case Resource.Id.secure_connect_scan:
                     PairWithBlueToothDevice(true);
-                    return true;
-                case Resource.Id.insecure_connect_scan:
-                    PairWithBlueToothDevice(false);
                     return true;
                 case Resource.Id.discoverable:
                     EnsureDiscoverable();
@@ -198,24 +212,6 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
             {
                 StartActivityForResult(intent, REQUEST_CONNECT_DEVICE_INSECURE);
             }
-        }
-
-
-        void SetupChat()
-        {
-            conversationArrayAdapter = new ArrayAdapter<string>(Activity, Resource.Layout.message);
-            conversationView.Adapter = conversationArrayAdapter;
-
-            outEditText.SetOnEditorActionListener(writeListener);
-            sendButton.Click += (sender, e) =>
-            {
-                var textView = View.FindViewById<TextView>(Resource.Id.edit_text_out);
-                var msg = textView.Text;
-                SendMessage(msg);
-            };
-
-            chatService = new BluetoothChatService(handler);
-            outStringBuffer = new StringBuilder("");
         }
 
         void SendMessage(String message)
@@ -313,6 +309,20 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
                 discoverableIntent.PutExtra(BluetoothAdapter.ExtraDiscoverableDuration, 300);
                 StartActivity(discoverableIntent);
             }
+        }
+
+        private void spinner1_ItemSelected(object sender, AdapterView.ItemSelectedEventArgs e)
+        {
+            Spinner spinner = (Spinner)sender;
+            string toast = string.Format("Stav karty 1 je {0}", spinner.GetItemAtPosition(e.Position));
+            Toast.MakeText(View.Context, toast, ToastLength.Long).Show();
+        }
+
+        private void spinner2_ItemSelected(object sender, AdapterView.ItemSelectedEventArgs e)
+        {
+            Spinner spinner = (Spinner)sender;
+            string toast = string.Format("Stav karty 1 je {0}", spinner.GetItemAtPosition(e.Position));
+            Toast.MakeText(View.Context, toast, ToastLength.Long).Show();
         }
     }
 }

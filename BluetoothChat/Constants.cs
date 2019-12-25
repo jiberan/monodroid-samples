@@ -11,5 +11,9 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
 
         public const string DEVICE_NAME = "device_name";
         public const string TOAST = "toast";
+
+        public const string ID_TRANSAKCE = "idTransakce";
+        public const string VELICINA_RIDIC1 = "velicinaRidic1";
+        public const string VELICINA_RIDIC2 = "velicinaRidic2";
     }
 }

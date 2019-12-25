@@ -14,12 +14,9 @@
 * limitations under the License.
 */
 
-using System.IO;
 using System.Runtime.CompilerServices;
 using Android.Bluetooth;
 using Android.OS;
-using Android.Util;
-using Java.Lang;
 using Java.Util;
 
 namespace com.xamarin.samples.bluetooth.bluetoothchat
@@ -33,20 +30,18 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
     /// a wrapper which manages the various threads used to connect, send, and
     /// receive messages via BT.</para>
     /// </summary>
-    class BluetoothChatService
+    partial class BluetoothChatService
     {
         const string TAG = "BluetoothChatService";
 
         const string NAME_SECURE = "BluetoothChatSecure";
-        const string NAME_INSECURE = "BluetoothChatInsecure";
 
-        static UUID MY_UUID_SECURE = UUID.FromString("fa87c0d0-afac-11de-8a39-0800200c9a66");
-        static UUID MY_UUID_INSECURE = UUID.FromString("8ce255c0-200a-11e0-ac64-0800200c9a66");
+        static UUID MY_UUID_SECURE = UUID.FromString("00001101-0000-1000-8000-00805f9b34fb");
+
 
         BluetoothAdapter btAdapter;
         Handler handler;
-        AcceptThread secureAcceptThread;
-        AcceptThread insecureAcceptThread;
+        AcceptThread secureAcceptThread;      
         ConnectThread connectThread;
         ConnectedThread connectedThread;
         int state;
@@ -63,7 +58,7 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
         /// <param name='handler'>
         /// A Handler to send messages back to the UI Activity.
         /// </param>
-        public BluetoothChatService( Handler handler)
+        public BluetoothChatService(Handler handler)
         {
             btAdapter = BluetoothAdapter.DefaultAdapter;
             state = STATE_NONE;
@@ -107,15 +102,9 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
 
             if (secureAcceptThread == null)
             {
-                secureAcceptThread = new AcceptThread(this, true);
+                secureAcceptThread = new AcceptThread(this);
                 secureAcceptThread.Start();
             }
-            if (insecureAcceptThread == null)
-            {
-                insecureAcceptThread = new AcceptThread(this, false);
-                insecureAcceptThread.Start();
-            }
-
             UpdateUserInterfaceTitle();
         }
 
@@ -147,7 +136,7 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
             }
 
             // Start the thread to connect with the given device
-            connectThread = new ConnectThread(device, this, secure);
+            connectThread = new ConnectThread(device, this);
             connectThread.Start();
 
             UpdateUserInterfaceTitle();
@@ -178,20 +167,11 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
                 connectedThread.Cancel();
                 connectedThread = null;
             }
-
-
             if (secureAcceptThread != null)
             {
                 secureAcceptThread.Cancel();
                 secureAcceptThread = null;
             }
-
-            if (insecureAcceptThread != null)
-            {
-                insecureAcceptThread.Cancel();
-                insecureAcceptThread = null;
-            }
-
             // Start the thread to manage the connection and perform transmissions
             connectedThread = new ConnectedThread(socket, this, socketType);
             connectedThread.Start();
@@ -228,12 +208,6 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
             {
                 secureAcceptThread.Cancel();
                 secureAcceptThread = null;
-            }
-
-            if (insecureAcceptThread != null)
-            {
-                insecureAcceptThread.Cancel();
-                insecureAcceptThread = null;
             }
 
             state = STATE_NONE;
@@ -292,294 +266,6 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
             state = STATE_NONE;
             UpdateUserInterfaceTitle();
             this.Start();
-        }
-
-        /// <summary>
-        /// This thread runs while listening for incoming connections. It behaves
-        /// like a server-side client. It runs until a connection is accepted
-        /// (or until cancelled).
-        /// </summary>
-        class AcceptThread : Thread
-        {
-            // The local server socket
-            BluetoothServerSocket serverSocket;
-            string socketType;
-            BluetoothChatService service;
-
-            public AcceptThread(BluetoothChatService service, bool secure)
-            {
-                BluetoothServerSocket tmp = null;
-                socketType = secure ? "Secure" : "Insecure";
-                this.service = service;
-
-                try
-                {
-                    if (secure)
-                    {
-                        tmp = service.btAdapter.ListenUsingRfcommWithServiceRecord(NAME_SECURE, MY_UUID_SECURE);
-                    }
-                    else
-                    {
-                        tmp = service.btAdapter.ListenUsingInsecureRfcommWithServiceRecord(NAME_INSECURE, MY_UUID_INSECURE);
-                    }
-
-                }
-                catch (Java.IO.IOException e)
-                {
-                    Log.Error(TAG, "listen() failed", e);
-                }
-                serverSocket = tmp;
-                service.state = STATE_LISTEN;
-            }
-
-            public override void Run()
-            {
-                Name = $"AcceptThread_{socketType}";
-                BluetoothSocket socket = null;
-
-                while (service.GetState() != STATE_CONNECTED)
-                {
-                    try
-                    {
-                        socket = serverSocket.Accept();
-                    }
-                    catch (Java.IO.IOException e)
-                    {
-                        Log.Error(TAG, "accept() failed", e);
-                        break;
-                    }
-
-                    if (socket != null)
-                    {
-                        lock (this)
-                        {
-                            switch (service.GetState())
-                            {
-                                case STATE_LISTEN:
-                                case STATE_CONNECTING:
-                                    // Situation normal. Start the connected thread.
-                                    service.Connected(socket, socket.RemoteDevice, socketType);
-                                    break;
-                                case STATE_NONE:
-                                case STATE_CONNECTED:
-                                    try
-                                    {
-                                        socket.Close();
-                                    }
-                                    catch (Java.IO.IOException e)
-                                    {
-                                        Log.Error(TAG, "Could not close unwanted socket", e);
-                                    }
-                                    break;
-                            }
-                        }
-                    }
-                }
-            }
-
-            public void Cancel()
-            {
-                try
-                {
-                    serverSocket.Close();
-                }
-                catch (Java.IO.IOException e)
-                {
-                    Log.Error(TAG, "close() of server failed", e);
-                }
-            }
-        }
-
-        /// <summary>
-        /// This thread runs while attempting to make an outgoing connection
-        /// with a device. It runs straight through; the connection either
-        /// succeeds or fails.
-        /// </summary>
-        protected class ConnectThread : Thread
-        {
-             BluetoothSocket socket;
-             BluetoothDevice device;
-             BluetoothChatService service;
-            string socketType;
-
-            public ConnectThread(BluetoothDevice device, BluetoothChatService service, bool secure)
-            {
-                this.device = device;
-                this.service = service;
-                BluetoothSocket tmp = null;
-                socketType = secure ? "Secure" : "Insecure";
-
-                try
-                {
-                    if (secure)
-                    {
-                        tmp = device.CreateRfcommSocketToServiceRecord(MY_UUID_SECURE);
-                    }
-                    else
-                    {
-                        tmp = device.CreateInsecureRfcommSocketToServiceRecord(MY_UUID_INSECURE);
-                    }
-
-                }
-                catch (Java.IO.IOException e)
-                {
-                    Log.Error(TAG, "create() failed", e);
-                }
-                socket = tmp;
-                service.state = STATE_CONNECTING;
-            }
-
-            public override void Run()
-            {
-                Name = $"ConnectThread_{socketType}";
-
-                // Always cancel discovery because it will slow down connection
-                service.btAdapter.CancelDiscovery();
-
-                // Make a connection to the BluetoothSocket
-                try
-                {
-                    // This is a blocking call and will only return on a
-                    // successful connection or an exception
-                    socket.Connect();
-                }
-                catch (Java.IO.IOException e)
-                {
-                    // Close the socket
-                    try
-                    {
-                        socket.Close();
-                    }
-                    catch (Java.IO.IOException e2)
-                    {
-                        Log.Error(TAG, $"unable to close() {socketType} socket during connection failure.", e2);
-                    }
-
-                    // Start the service over to restart listening mode
-                    service.ConnectionFailed();
-                    return;
-                }
-
-                // Reset the ConnectThread because we're done
-                lock (this)
-                {
-                    service.connectThread = null;
-                }
-
-                // Start the connected thread
-                service.Connected(socket, device, socketType);
-            }
-
-            public void Cancel()
-            {
-                try
-                {
-                    socket.Close();
-                }
-                catch (Java.IO.IOException e)
-                {
-                    Log.Error(TAG, "close() of connect socket failed", e);
-                }
-            }
-        }
-
-        /// <summary>
-        /// This thread runs during a connection with a remote device.
-        /// It handles all incoming and outgoing transmissions.
-        /// </summary>
-        class ConnectedThread : Thread
-        {
-            BluetoothSocket socket;
-            Stream inStream;
-            Stream outStream;
-            BluetoothChatService service;
-
-            public ConnectedThread(BluetoothSocket socket, BluetoothChatService service, string socketType)
-            {
-                Log.Debug(TAG, $"create ConnectedThread: {socketType}");
-                this.socket = socket;
-                this.service = service;
-                Stream tmpIn = null;
-                Stream tmpOut = null;
-
-                // Get the BluetoothSocket input and output streams
-                try
-                {
-                    tmpIn = socket.InputStream;
-                    tmpOut = socket.OutputStream;
-                }
-                catch (Java.IO.IOException e)
-                {
-                    Log.Error(TAG, "temp sockets not created", e);
-                }
-
-                inStream = tmpIn;
-                outStream = tmpOut;
-                service.state = STATE_CONNECTED;
-            }
-
-            public override void Run()
-            {
-                Log.Info(TAG, "BEGIN mConnectedThread");
-                byte[] buffer = new byte[1024];
-                int bytes;
-
-                // Keep listening to the InputStream while connected
-                while (service.GetState() == STATE_CONNECTED)
-                {
-                    try
-                    {
-                        // Read from the InputStream
-                        bytes = inStream.Read(buffer, 0, buffer.Length);
-
-                        // Send the obtained bytes to the UI Activity
-                        service.handler
-                               .ObtainMessage(Constants.MESSAGE_READ, bytes, -1, buffer)
-                               .SendToTarget();
-                    }
-                    catch (Java.IO.IOException e)
-                    {
-                        Log.Error(TAG, "disconnected", e);
-                        service.ConnectionLost();
-                        break;
-                    }
-                }
-            }
-
-            /// <summary>
-            /// Write to the connected OutStream.
-            /// </summary>
-            /// <param name='buffer'>
-            /// The bytes to write
-            /// </param>
-            public void Write(byte[] buffer)
-            {
-                try
-                {
-                    outStream.Write(buffer, 0, buffer.Length);
-
-                    // Share the sent message back to the UI Activity
-                    service.handler
-                           .ObtainMessage(Constants.MESSAGE_WRITE, -1, -1, buffer)
-                           .SendToTarget();
-                }
-                catch (Java.IO.IOException e)
-                {
-                    Log.Error(TAG, "Exception during write", e);
-                }
-            }
-
-            public void Cancel()
-            {
-                try
-                {
-                    socket.Close();
-                }
-                catch (Java.IO.IOException e)
-                {
-                    Log.Error(TAG, "close() of connect socket failed", e);
-                }
-            }
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿
 using System;
+using System.Collections.Generic;
 using System.Text;
 using Android.App;
 using Android.Bluetooth;
@@ -36,6 +37,7 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
         ChatHandler handler;
         WriteListener writeListener;
 
+
         public override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
@@ -69,13 +71,13 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
             }
             else if (chatService == null)
             {
-                chatService = new BluetoothChatService(handler);                
+                chatService = new BluetoothChatService(handler);
             }
 
             // Register for when the scan mode changes
             var filter = new IntentFilter(BluetoothAdapter.ActionScanModeChanged);
             Activity.RegisterReceiver(receiver, filter);
-        } 
+        }
 
         public override void OnResume()
         {
@@ -214,22 +216,77 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
             }
         }
 
-        void SendMessage(String message)
+        public void SendMessage(byte idTransakce)
         {
-            if (chatService.GetState() != BluetoothChatService.STATE_CONNECTED)
-            {
-                Toast.MakeText(Activity, Resource.String.not_connected, ToastLength.Long).Show();
-                return;
-            }
-
-            if (message.Length > 0)
-            {
-                var bytes = Encoding.ASCII.GetBytes(message);
-                chatService.Write(bytes);
-                outStringBuffer.Clear();
-                outEditText.Text = outStringBuffer.ToString();
-            }
+            chatService.Write(GetMessage(idTransakce));
+            outStringBuffer.Clear();
+            outEditText.Text = outStringBuffer.ToString();
         }
+
+        public byte[] GetMessage(byte idTransakce)
+        {
+            var data = new List<byte>();
+
+            //karta1
+            data.Add(179); //0xB3
+            data.Add(50); //delka paketu
+            data.Add(4); //id paketu
+            data.Add(idTransakce); //id transakce
+            data.AddRange(GetBytes(GetVelicina(Resource.Id.driverCard1))); //datove pole (velicina)
+
+            //karta2
+            data.AddRange(GetBytes(GetVelicina(Resource.Id.driverCard2))); //datove pole (velicina)
+
+            var crc = GetCRC(data.ToArray());
+
+            data.AddRange(GetBytes(crc)); //crc
+
+            var bytes = data.ToArray();
+            return bytes;
+        }
+
+
+        public static ushort GetCRC(byte[] buff)
+        {
+            ushort d = 62000;
+            ushort crc;
+            byte i, k;
+            ushort pomW;
+            crc = 0xFFFF;
+            for (i = 0; i < buff.Length; i++)
+            {
+                int pom_i = buff[i] << 8;
+                pomW = (ushort)(pom_i);
+                for (k = 0; k < 8; k++)
+                {
+                    var val = (crc ^ pomW) & 0x8000;
+                    if (val > 0)
+                    {
+                        int crci = (crc << 1) ^ 0x1021;
+                        crc = (ushort)crci;
+                    }
+                    else
+                        crc <<= 1;
+                    pomW <<= 1;
+                }
+            }
+            return (crc);
+        }
+
+        ushort GetVelicina(int spinnerId)
+        {
+            Spinner spinner = View.FindViewById<Spinner>(spinnerId);
+            return Convert.ToUInt16(spinner.SelectedItemPosition);
+        }
+
+        private byte[] GetBytes(ushort val)
+        {
+            byte[] intBytes = BitConverter.GetBytes(val);
+            Array.Reverse(intBytes);
+
+            return intBytes;
+        }
+
 
         bool HasActionBar()
         {
@@ -295,7 +352,7 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
             {
                 if (actionId == ImeAction.ImeNull && e.Action == KeyEventActions.Up)
                 {
-                    host.SendMessage(v.Text);
+                    //  host.SendMessage(v.Text);
                 }
                 return true;
             }

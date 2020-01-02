@@ -49,6 +49,7 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
                         var readBuffer = (byte[])msg.Obj;
                         var readMessage = Encoding.ASCII.GetString(readBuffer);
                         chatFrag.conversationArrayAdapter.Add($"{chatFrag.connectedDeviceName}: {readMessage}");
+                        chatFrag.SendMessage(readBuffer[3]);
                         break;
                     case Constants.MESSAGE_DEVICE_NAME:
                         chatFrag.connectedDeviceName = msg.Data.GetString(Constants.DEVICE_NAME);

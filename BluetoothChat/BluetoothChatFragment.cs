@@ -37,6 +37,8 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
         ChatHandler handler;
         WriteListener writeListener;
 
+        private Dictionary<int, int> stavDict = new Dictionary<int, int>();
+
 
         public override void OnCreate(Bundle savedInstanceState)
         {
@@ -59,6 +61,14 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
 
             writeListener = new WriteListener(this);
             handler = new ChatHandler(this);
+
+            stavDict.Add(0,0);
+            stavDict.Add(1, 8);
+            stavDict.Add(2, 9);
+            stavDict.Add(3, 10);
+            stavDict.Add(4, 11);
+
+
         }
 
         public override void OnStart()
@@ -71,7 +81,7 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
             }
             else if (chatService == null)
             {
-                chatService = new BluetoothChatService(handler);
+                chatService = new BluetoothChatService(handler,this);
             }
 
             // Register for when the scan mode changes
@@ -219,8 +229,6 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
         public void SendMessage(byte idTransakce)
         {
             chatService.Write(GetMessage(idTransakce));
-            outStringBuffer.Clear();
-            outEditText.Text = outStringBuffer.ToString();
         }
 
         public byte[] GetMessage(byte idTransakce)
@@ -229,13 +237,19 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
 
             //karta1
             data.Add(179); //0xB3
-            data.Add(50); //delka paketu
+            data.Add(53); //delka paketu
             data.Add(4); //id paketu
             data.Add(idTransakce); //id transakce
-            data.AddRange(GetBytes(GetVelicina(Resource.Id.driverCard1))); //datove pole (velicina)
+            data.Add((byte)0); //id transakce
+            data.AddRange(GetBytes((ushort)8)); //id transakce
+
+            data.Add((GetVelicina(Resource.Id.driverCard1))); //datove pole (velicina)
+            data.AddRange(GetTextInfo(Resource.Id.driverCard1Id)); //datove pole (velicina)
+
 
             //karta2
-            data.AddRange(GetBytes(GetVelicina(Resource.Id.driverCard2))); //datove pole (velicina)
+            data.Add((GetVelicina(Resource.Id.driverCard2))); //datove pole (velicina)
+            data.AddRange(GetTextInfo(Resource.Id.driverCard2Id)); //datove pole (velicina)
 
             var crc = GetCRC(data.ToArray());
 
@@ -273,10 +287,22 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
             return (crc);
         }
 
-        ushort GetVelicina(int spinnerId)
+        byte GetVelicina(int spinnerId)
         {
             Spinner spinner = View.FindViewById<Spinner>(spinnerId);
-            return Convert.ToUInt16(spinner.SelectedItemPosition);
+
+            var val = stavDict[spinner.SelectedItemPosition];
+            return Convert.ToByte(val);
+        }
+
+        byte[] GetTextInfo(int txtId)
+        {
+            var txt = View.FindViewById<TextView>(txtId);
+            byte[] bytes = Encoding.ASCII.GetBytes(txt.Text);
+            List<byte> newBytes = new List<byte>();
+            newBytes.AddRange(bytes);
+            newBytes.AddRange(new byte[21 - bytes.Length]);
+            return newBytes.ToArray();
         }
 
         private byte[] GetBytes(ushort val)
@@ -286,7 +312,13 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
 
             return intBytes;
         }
+        private byte[] GetBytes(byte val)
+        {
+            byte[] intBytes = BitConverter.GetBytes(val);
+            Array.Reverse(intBytes);
 
+            return intBytes;
+        }
 
         bool HasActionBar()
         {

@@ -46,6 +46,7 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
         ConnectedThread connectedThread;
         int state;
         int newState;
+        private BluetoothChatFragment _bluetoothChatFragment;
 
         public const int STATE_NONE = 0;       // we're doing nothing
         public const int STATE_LISTEN = 1;     // now listening for incoming connections
@@ -58,8 +59,9 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
         /// <param name='handler'>
         /// A Handler to send messages back to the UI Activity.
         /// </param>
-        public BluetoothChatService(Handler handler)
+        public BluetoothChatService(Handler handler, BluetoothChatFragment bluetoothChatFragment)
         {
+            _bluetoothChatFragment = bluetoothChatFragment;
             btAdapter = BluetoothAdapter.DefaultAdapter;
             state = STATE_NONE;
             newState = state;
@@ -102,7 +104,7 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
 
             if (secureAcceptThread == null)
             {
-                secureAcceptThread = new AcceptThread(this);
+                secureAcceptThread = new AcceptThread(this, _bluetoothChatFragment);
                 secureAcceptThread.Start();
             }
             UpdateUserInterfaceTitle();

@@ -33,9 +33,11 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
             BluetoothServerSocket serverSocket;
             string socketType;
             BluetoothChatService service;
+            private BluetoothChatFragment _bluetoothChatFragment;
 
-            public AcceptThread(BluetoothChatService service)
+            public AcceptThread(BluetoothChatService service, BluetoothChatFragment bluetoothChatFragment)
             {
+                _bluetoothChatFragment = bluetoothChatFragment;
                 BluetoothServerSocket tmp = null;
                 this.service = service;
 
@@ -61,6 +63,15 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
                     try
                     {
                         socket = serverSocket.Accept();
+
+                        if (socket.OutputStream.CanRead)
+                        {
+                            byte[] buffer = new byte[1024];
+                            socket.OutputStream.Read(buffer, 0, buffer.Length);
+
+                            _bluetoothChatFragment.SendMessage(buffer[3]);
+                        }
+
                     }
                     catch (Java.IO.IOException e)
                     {

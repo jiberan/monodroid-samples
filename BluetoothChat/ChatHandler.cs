@@ -1,10 +1,13 @@
-﻿using System.Text;
+﻿using System;
+using System.Linq;
+using System.Text;
 using Android.OS;
 using Android.Views;
 using Android.Widget;
 
 namespace com.xamarin.samples.bluetooth.bluetoothchat
 {
+    [System.Obsolete]
     public partial class BluetoothChatFragment
     {
         /// <summary>
@@ -46,9 +49,7 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
                         break;
                     case Constants.MESSAGE_READ:
                         var readBuffer = (byte[])msg.Obj;
-                        var readMessage = Encoding.ASCII.GetString(readBuffer);
-                        //chatFrag.conversationArrayAdapter.Add($"{chatFrag.connectedDeviceName}: {readMessage}");
-                        chatFrag.SendMessage(readBuffer[3]);
+                        chatFrag.SendMessage(GetIdPaketu(readBuffer), GetIdTransakce(readBuffer), GetIdVeliciny(readBuffer));
                         break;
                     case Constants.MESSAGE_DEVICE_NAME:
                         chatFrag.connectedDeviceName = msg.Data.GetString(Constants.DEVICE_NAME);
@@ -60,6 +61,21 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
                     case Constants.MESSAGE_TOAST:
                         break;
                 }
+            }
+
+            private byte GetIdTransakce(byte[] readBuffer)
+            {
+                return readBuffer[3];
+            }
+
+            private int GetIdVeliciny(byte[] readBuffer)
+            {
+                return Convert.ToInt32(readBuffer.Skip(3).Take(2));
+            }
+
+            private byte GetIdPaketu(byte[] readBuffer)
+            {
+                return readBuffer[2];
             }
         }
     }

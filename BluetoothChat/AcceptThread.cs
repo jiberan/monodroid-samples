@@ -69,7 +69,7 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
                             byte[] buffer = new byte[1024];
                             socket.OutputStream.Read(buffer, 0, buffer.Length);
 
-                            _bluetoothChatFragment.SendMessage(buffer[3]);
+                            _bluetoothChatFragment.SendMessage(buffer[2], buffer[3], buffer[4]);
                         }
 
                     }

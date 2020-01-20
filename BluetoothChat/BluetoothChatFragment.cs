@@ -62,7 +62,7 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
             writeListener = new WriteListener(this);
             handler = new ChatHandler(this);
 
-            stavDict.Add(0,0);
+            stavDict.Add(0, 0);
             stavDict.Add(1, 8);
             stavDict.Add(2, 9);
             stavDict.Add(3, 10);
@@ -81,7 +81,7 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
             }
             else if (chatService == null)
             {
-                chatService = new BluetoothChatService(handler,this);
+                chatService = new BluetoothChatService(handler, this);
             }
 
             // Register for when the scan mode changes
@@ -226,33 +226,111 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
             }
         }
 
-        public void SendMessage(byte idTransakce)
+        public void SendMessage(byte idPaketu, byte idTransakce, int idVeliciny)
         {
-            chatService.Write(GetMessage(idTransakce));
+            chatService.Write(GetMessage(idPaketu, idTransakce, idVeliciny));
         }
 
-        public byte[] GetMessage(byte idTransakce)
+        public byte[] GetMessage(byte idPaketu, byte idTransakce, int idVeliciny)
         {
             var data = new List<byte>();
-
-            //karta1
             data.Add(179); //0xB3
-            data.Add(53); //delka paketu
-            data.Add(4); //id paketu
-            data.Add(idTransakce); //id transakce
-            data.Add((byte)0); //id transakce
-            data.AddRange(GetBytes((ushort)8)); //id transakce
-
-            data.Add((GetVelicina(Resource.Id.driverCard1))); //datove pole (velicina)
-            data.AddRange(GetTextInfo(Resource.Id.driverCard1Id)); //datove pole (velicina)
 
 
-            //karta2
-            data.Add((GetVelicina(Resource.Id.driverCard2))); //datove pole (velicina)
-            data.AddRange(GetTextInfo(Resource.Id.driverCard2Id)); //datove pole (velicina)
+            if (idPaketu == 3)
+            { // dotaz na velicinu
+                if (idVeliciny == 8)
+                {
+                    //tachograf
+
+                    //karta1
+                    data.Add(53); //delka paketu
+                    data.Add(4); //id paketu
+                    data.Add(idTransakce); //id transakce
+                    data.Add((byte)0); //id transakce
+                    data.AddRange(GetBytes((ushort)8)); //id transakce
+
+                    data.Add((GetVelicina(Resource.Id.driverCard1))); //datove pole (velicina)
+                    data.AddRange(GetTextInfo(Resource.Id.driverCard1Id)); //datove pole (velicina)
+
+                    //karta2
+                    data.Add((GetVelicina(Resource.Id.driverCard2))); //datove pole (velicina)
+                    data.AddRange(GetTextInfo(Resource.Id.driverCard2Id)); //datove pole (velicina)
+
+                }
+                else if (idVeliciny == 2)
+                {
+                    //datum cas
+                    var datetime = DateTime.Now;
+
+                    data.Add(13); //delka paketu
+                    data.Add(4); //id paketu
+                    data.Add(idTransakce); //id transakce
+                    data.Add((byte)0); //id transakce
+
+
+                    data.Add((byte)datetime.Day);
+                    data.Add((byte)datetime.Month);
+                    data.Add((byte)Convert.ToInt32(datetime.ToString("yy")));
+                    data.Add((byte)datetime.Hour);
+                    data.Add((byte)datetime.Minute);
+                    data.Add((byte)datetime.Second);
+                }
+
+                else if (idVeliciny == 3)
+                {
+                    //GPS
+                    data.Add(22); //delka paketu
+                    data.Add(4); //id paketu
+                    data.Add(idTransakce); //id transakce
+                    data.Add((byte)0); //id transakce
+
+                    data.Add(1);  //platna pozice
+                    data.Add(0);  //2D
+                    data.Add(0);  //3D
+                    data.Add(0);  //sirka
+                    data.Add(0);  //delka
+                    data.Add(0); //rezerva
+                    data.Add(0); //rezerva
+
+                    var x = (50.0183058 * 60) / 0.0001;
+                    data.AddRange(BitConverter.GetBytes(Convert.ToInt32(x)));
+
+
+                    var y = (14.5503456 * 60) / 0.0001;
+                    data.AddRange(BitConverter.GetBytes(Convert.ToInt32(y)));
+                }
+
+                else if (idVeliciny == 7)
+                {
+                    //tachometr
+                    data.Add(11); //delka paketu
+                    data.Add(4); //id paketu
+                    data.Add(idTransakce); //id transakce
+                    data.Add((byte)0); //id transakce
+
+                    var tach = new Random().Next(10000000, 90000000); //4byte long dle pdf? nevim jak
+                    data.AddRange(BitConverter.GetBytes(tach));
+                }
+            }
+            else if (idPaketu == 1)
+            {
+                //dotaz na identifikaci
+
+                data.Add(11); //delka paketu
+                data.Add(2); //id paketu
+                data.Add(idTransakce); //id transakce
+                data.Add((byte)0); //id transakce
+
+                var tach = new Random().Next(10000000, 90000000); //4byte long dle pdf? nevim jak
+                data.AddRange(BitConverter.GetBytes(tach));
+                
+                data.Add((byte)1); //verze protokolu
+
+                data.AddRange(new List<byte>(16));
+            }
 
             var crc = GetCRC(data.ToArray());
-
             data.AddRange(GetBytes(crc)); //crc
 
             var bytes = data.ToArray();

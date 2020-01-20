@@ -49,7 +49,7 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
                         break;
                     case Constants.MESSAGE_READ:
                         var readBuffer = (byte[])msg.Obj;
-                        chatFrag.SendMessage(GetIdPaketu(readBuffer), GetIdTransakce(readBuffer), GetIdVeliciny(readBuffer));
+                        _ = chatFrag.SendMessage(GetIdPaketu(readBuffer), GetIdTransakce(readBuffer), GetIdVeliciny(readBuffer));
                         break;
                     case Constants.MESSAGE_DEVICE_NAME:
                         chatFrag.connectedDeviceName = msg.Data.GetString(Constants.DEVICE_NAME);

@@ -2,14 +2,17 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 using Android.App;
 using Android.Bluetooth;
 using Android.Content;
+using Android.Icu.Text;
 using Android.OS;
 using Android.Runtime;
 using Android.Views;
 using Android.Views.InputMethods;
 using Android.Widget;
+using Xamarin.Essentials;
 
 namespace com.xamarin.samples.bluetooth.bluetoothchat
 {
@@ -106,8 +109,9 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
             return inflater.Inflate(Resource.Layout.fragment_bluetooth_chat, container, false);
         }
 
-        public override void OnViewCreated(View view, Bundle savedInstanceState)
+        public override async void OnViewCreated(View view, Bundle savedInstanceState)
         {
+            await GetGps();
             FillSpinner(view);
         }
 
@@ -226,12 +230,12 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
             }
         }
 
-        public void SendMessage(byte idPaketu, byte idTransakce, int idVeliciny)
+        public async Task SendMessage(byte idPaketu, byte idTransakce, int idVeliciny)
         {
-            chatService.Write(GetMessage(idPaketu, idTransakce, idVeliciny));
+            chatService.Write(await GetMessage(idPaketu, idTransakce, idVeliciny));
         }
 
-        public byte[] GetMessage(byte idPaketu, byte idTransakce, int idVeliciny)
+        public async Task<byte[]> GetMessage(byte idPaketu, byte idTransakce, int idVeliciny)
         {
             var data = new List<byte>();
             data.Add(179); //0xB3
@@ -293,11 +297,14 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
                     data.Add(0); //rezerva
                     data.Add(0); //rezerva
 
-                    var x = (50.0183058 * 60) / 0.0001;
+
+                    var gps = await GetGps();
+                    
+                    var x = (gps.Item1 * 60) / 0.0001;
                     data.AddRange(BitConverter.GetBytes(Convert.ToInt32(x)));
 
 
-                    var y = (14.5503456 * 60) / 0.0001;
+                    var y = (gps.Item2 * 60) / 0.0001;
                     data.AddRange(BitConverter.GetBytes(Convert.ToInt32(y)));
                 }
 
@@ -324,7 +331,7 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
 
                 var tach = new Random().Next(10000000, 90000000); //4byte long dle pdf? nevim jak
                 data.AddRange(BitConverter.GetBytes(tach));
-                
+
                 data.Add((byte)1); //verze protokolu
 
                 data.AddRange(new List<byte>(16));
@@ -490,6 +497,29 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
             Spinner spinner = (Spinner)sender;
             string toast = string.Format("Stav karty 1 je {0}", spinner.GetItemAtPosition(e.Position));
             Toast.MakeText(View.Context, toast, ToastLength.Long).Show();
+        }
+
+        async Task<Tuple<double, double>> GetGps()
+        {
+            try
+            {
+                var request = new GeolocationRequest(GeolocationAccuracy.Medium);
+                var location = await Geolocation.GetLocationAsync(request);
+
+                if (location != null)
+                {
+                    Toast.MakeText(View.Context, $"Latitude: {location.Latitude}, Longitude: {location.Longitude}, Altitude: {location.Altitude}", ToastLength.Long).Show();
+
+                    return new Tuple<double, double>(location.Latitude, location.Longitude);
+                    //   Console.WriteLine($"Latitude: {location.Latitude}, Longitude: {location.Longitude}, Altitude: {location.Altitude}");
+                }
+            }
+            catch (Exception ex)
+            {
+                return new Tuple<double, double>(0, 0);
+            }
+
+            return new Tuple<double, double>(0, 0);
         }
     }
 }

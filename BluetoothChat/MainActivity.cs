@@ -43,6 +43,8 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
                 tx.Commit();
 
             }
+
+            Xamarin.Essentials.Platform.Init(this, savedInstanceState);
         }
 
         public override bool OnCreateOptionsMenu(Android.Views.IMenu menu)

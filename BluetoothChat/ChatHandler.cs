@@ -70,7 +70,12 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
 
             private int GetIdVeliciny(byte[] readBuffer)
             {
-                return Convert.ToInt32(readBuffer.Skip(3).Take(2));
+                var res = readBuffer.Skip(3).Take(2).ToArray();
+
+                if (BitConverter.IsLittleEndian)
+                    Array.Reverse(res);
+
+                return BitConverter.ToInt32(res);
             }
 
             private byte GetIdPaketu(byte[] readBuffer)

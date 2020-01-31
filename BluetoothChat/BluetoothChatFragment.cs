@@ -230,7 +230,7 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
             }
         }
 
-        public async Task SendMessage(byte idPaketu, byte idTransakce, int idVeliciny)
+        public async Task SendMessage(byte idPaketu, byte idTransakce, short idVeliciny)
         {
             chatService.Write(await GetMessage(idPaketu, idTransakce, idVeliciny));
         }

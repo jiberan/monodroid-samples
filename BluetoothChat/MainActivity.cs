@@ -15,6 +15,7 @@
 */
 
 using Android.App;
+using Android.Content;
 using Android.OS;
 using Android.Support.V7.App;
 
@@ -45,6 +46,13 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
             }
 
             Xamarin.Essentials.Platform.Init(this, savedInstanceState);
+
+            var intent = PackageManager.GetLaunchIntentForPackage("cz.oltisgroup.asc");
+            StartActivity(intent);
+            /*  Intent intent = new Intent();
+              intent.SetPackage("cz.oltisgroup.asc");
+              intent.SetFlags(ActivityFlags.NewTask);
+              StartActivity(intent);*/
         }
 
         public override bool OnCreateOptionsMenu(Android.Views.IMenu menu)

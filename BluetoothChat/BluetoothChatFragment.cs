@@ -251,8 +251,8 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
                     data.Add(53); //delka paketu
                     data.Add(4); //id paketu
                     data.Add(idTransakce); //id transakce
-                    data.Add((byte)0); //id transakce
-                    data.AddRange(GetBytes((ushort)8)); //id transakce
+                    data.Add((byte)0); //error
+                    data.AddRange(GetBytes((ushort)8)); //id velicina
 
                     data.Add((GetVelicina(Resource.Id.driverCard1))); //datove pole (velicina)
                     data.AddRange(GetTextInfo(Resource.Id.driverCard1Id)); //datove pole (velicina)
@@ -267,12 +267,12 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
                     //datum cas
                     var datetime = DateTime.Now;
 
-                    data.Add(13); //delka paketu
+                    data.Add(15); //delka paketu
                     data.Add(4); //id paketu
                     data.Add(idTransakce); //id transakce
-                    data.Add((byte)0); //id transakce
-
-
+                    data.Add((byte)0); //error
+                    data.AddRange(GetBytes((ushort)2)); //id velicina
+                    
                     data.Add((byte)datetime.Day);
                     data.Add((byte)datetime.Month);
                     data.Add((byte)Convert.ToInt32(datetime.ToString("yy")));
@@ -284,57 +284,68 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
                 else if (idVeliciny == 3)
                 {
                     //GPS
-                    data.Add(22); //delka paketu
+                    data.Add(18); //delka paketu
                     data.Add(4); //id paketu
                     data.Add(idTransakce); //id transakce
-                    data.Add((byte)0); //id transakce
+                    data.Add((byte)0); //error
+                    data.AddRange((GetBytes((ushort)3))); //id velicina
 
-                    data.Add(1);  //platna pozice
-                    data.Add(0);  //2D
-                    data.Add(0);  //3D
-                    data.Add(0);  //sirka
-                    data.Add(0);  //delka
-                    data.Add(0); //rezerva
-                    data.Add(0); //rezerva
-
+                    data.Add(160);  //status
 
                     var gps = await GetGps();
-                    
+
                     var x = (gps.Item1 * 60) / 0.0001;
-                    data.AddRange(BitConverter.GetBytes(Convert.ToInt32(x)));
-
-
                     var y = (gps.Item2 * 60) / 0.0001;
-                    data.AddRange(BitConverter.GetBytes(Convert.ToInt32(y)));
+
+                    data.AddRange(GetBytes(Convert.ToInt32(x)));
+                    data.AddRange(GetBytes(Convert.ToInt32(y)));
+                    /* data.Add(1);  //platna pozice
+                     data.Add(0);  //2D
+                     data.Add(0);  //3D
+                     data.Add(0);  //sirka
+                     data.Add(0);  //delka
+                     data.Add(0); //rezerva
+                     data.Add(0); //rezerva
+
+
+                     var gps = await GetGps();
+
+                     var x = (gps.Item1 * 60) / 0.0001;
+                     data.AddRange(BitConverter.GetBytes(Convert.ToInt32(x)));
+
+
+                     var y = (gps.Item2 * 60) / 0.0001;
+                     data.AddRange(BitConverter.GetBytes(Convert.ToInt32(y)));*/
                 }
 
                 else if (idVeliciny == 7)
                 {
                     //tachometr
-                    data.Add(11); //delka paketu
+                    data.Add(13); //delka paketu
                     data.Add(4); //id paketu
                     data.Add(idTransakce); //id transakce
-                    data.Add((byte)0); //id transakce
+                    data.Add((byte)0); //error
+                    data.AddRange((GetBytes((ushort)7))); //id velicina
 
                     var tach = new Random().Next(10000000, 90000000); //4byte long dle pdf? nevim jak
-                    data.AddRange(BitConverter.GetBytes(tach));
+                    data.AddRange(GetBytes(tach));
                 }
             }
             else if (idPaketu == 1)
             {
                 //dotaz na identifikaci
 
-                data.Add(11); //delka paketu
+                data.Add(27); //delka paketu
                 data.Add(2); //id paketu
                 data.Add(idTransakce); //id transakce
-                data.Add((byte)0); //id transakce
+                //data.Add((byte)0); //id transakce
 
                 var tach = new Random().Next(10000000, 90000000); //4byte long dle pdf? nevim jak
-                data.AddRange(BitConverter.GetBytes(tach));
+                data.AddRange(GetBytes(104935));
 
                 data.Add((byte)1); //verze protokolu
 
-                data.AddRange(new List<byte>(16));
+                data.AddRange(/*new List<byte>(16)*/GetVerzeFW("test"));
             }
 
             var crc = GetCRC(data.ToArray());
@@ -389,8 +400,23 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
             newBytes.AddRange(new byte[21 - bytes.Length]);
             return newBytes.ToArray();
         }
+        byte[] GetVerzeFW(string text)
+        {
+            byte[] bytes = Encoding.ASCII.GetBytes(text);
+            List<byte> newBytes = new List<byte>();
+            newBytes.AddRange(bytes);
+            newBytes.AddRange(new byte[16 - bytes.Length]);
+            return newBytes.ToArray();
+        }
 
         private byte[] GetBytes(ushort val)
+        {
+            byte[] intBytes = BitConverter.GetBytes(val);
+            Array.Reverse(intBytes);
+
+            return intBytes;
+        }
+        private byte[] GetBytes(int val)
         {
             byte[] intBytes = BitConverter.GetBytes(val);
             Array.Reverse(intBytes);
@@ -503,9 +529,9 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
         {
             try
             {
-                var request = new GeolocationRequest(GeolocationAccuracy.Medium);
-                var location = await Geolocation.GetLocationAsync(request);
-
+                var request = new GeolocationRequest(GeolocationAccuracy.Lowest);
+                var location = await Geolocation.GetLastKnownLocationAsync();
+             
                 if (location != null)
                 {
                     Toast.MakeText(View.Context, $"Latitude: {location.Latitude}, Longitude: {location.Longitude}, Altitude: {location.Altitude}", ToastLength.Long).Show();

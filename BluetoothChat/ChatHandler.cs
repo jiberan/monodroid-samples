@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using Android.OS;
 using Android.Views;
 using Android.Widget;
@@ -16,12 +17,13 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
         class ChatHandler : Handler
         {
             BluetoothChatFragment chatFrag;
+            SemaphoreSlim _semaphoreSlim = new SemaphoreSlim(1);
             public ChatHandler(BluetoothChatFragment frag)
             {
                 chatFrag = frag;
 
             }
-            public override void HandleMessage(Message msg)
+            public async override void HandleMessage(Message msg)
             {
                 switch (msg.What)
                 {
@@ -49,7 +51,10 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
                         break;
                     case Constants.MESSAGE_READ:
                         var readBuffer = (byte[])msg.Obj;
-                        _ = chatFrag.SendMessage(GetIdPaketu(readBuffer), GetIdTransakce(readBuffer), GetIdVeliciny(readBuffer));
+                        await _semaphoreSlim.WaitAsync();
+                        ShowTextOutput(readBuffer);
+                        await chatFrag.SendMessage(GetIdPaketu(readBuffer), GetIdTransakce(readBuffer), GetIdVeliciny(readBuffer));
+                        _semaphoreSlim.Release();
                         break;
                     case Constants.MESSAGE_DEVICE_NAME:
                         chatFrag.connectedDeviceName = msg.Data.GetString(Constants.DEVICE_NAME);
@@ -61,6 +66,15 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
                     case Constants.MESSAGE_TOAST:
                         break;
                 }
+            }
+
+            private void ShowTextOutput(byte[] bytes)
+            {
+                foreach (var b in bytes)
+                {
+                    Console.Write(b+" ");
+                }
+                Console.WriteLine();
             }
 
             private byte GetIdTransakce(byte[] readBuffer)

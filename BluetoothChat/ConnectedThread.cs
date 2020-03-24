@@ -14,7 +14,9 @@
 * limitations under the License.
 */
 
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Android.Bluetooth;
 using Android.Util;
 using Java.Lang;
@@ -57,6 +59,8 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
                 outStream = tmpOut;
                 service.state = STATE_CONNECTED;
             }
+            private readonly List<byte> _bytes = new List<byte>();
+            private readonly int _minCountByteValidArray = 6;
 
             public override void Run()
             {
@@ -72,10 +76,32 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
                         // Read from the InputStream
                         bytes = inStream.Read(buffer, 0, buffer.Length);
 
+
+                        _bytes.AddRange(buffer.Take(bytes));
+
+                        ProcessInternal();
+
+                        /* var rangeBuffer = buffer.Take(bytes).ToList();
+
+                         var syncByteIndexes = rangeBuffer.Where((p) => p == 179).Select((p, i) => i).ToList();
+
+                         for (int i = 0; i < syncByteIndexes.Count; i++)
+                         {
+                             int index = syncByteIndexes[i];
+                             int count = 0;
+                             if(i + 1 < syncByteIndexes.Count)
+                                 count = syncByteIndexes[i + 1] - index;
+                             else
+                             {
+                                 count = syncByteIndexes.Count - index;
+                             }
+                             var range = syncByteIndexes.GetRange(index, count);
+                         }*/
+
                         // Send the obtained bytes to the UI Activity
-                        service.handler
+                        /*service.handler
                                .ObtainMessage(Constants.MESSAGE_READ, bytes, -1, buffer)
-                               .SendToTarget();
+                               .SendToTarget();*/
                     }
                     catch (Java.IO.IOException e)
                     {
@@ -86,6 +112,34 @@ namespace com.xamarin.samples.bluetooth.bluetoothchat
                 }
             }
 
+            private void ProcessInternal()
+            {
+                for (var i = 0; i < _bytes.Count; i++)
+                {
+                    if (_bytes[i] == 179 && (i + 1) < _bytes.Count)
+                    {
+                        var lengthBytes = _bytes[i + 1];
+
+                        if (lengthBytes < _minCountByteValidArray)
+                            continue;
+
+                        var countBytes = _bytes.Skip(i).Count();
+
+                        if (lengthBytes <= countBytes)
+                        {
+                            var oneDataArray = _bytes.Skip(i).Take(lengthBytes).ToArray();
+
+                            service.handler
+                                .ObtainMessage(Constants.MESSAGE_READ, oneDataArray.Length, -1, oneDataArray)
+                                .SendToTarget();
+
+                            _bytes.RemoveRange(0, lengthBytes + i);
+                            i = -1;
+                        }
+                    }
+                }
+
+            }
             /// <summary>
             /// Write to the connected OutStream.
             /// </summary>
